@@ -1,0 +1,114 @@
+---
+title: "machin learning project"
+author: "Leila"
+date: "11/13/2021"
+output: html_document
+---
+
+## Prerequisites
+
+```{r}
+
+library(lattice)
+library(ggplot2)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(randomForest)
+library(RColorBrewer)
+
+set.seed(12345)
+```
+
+## Data loading
+
+```{r}
+train <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings = c("", "NA"))
+test <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", na.strings = c("", "NA"))
+```
+
+## Cleaning data
+the columns that contain the near-zero variance data and a lot of NA values should be deleted because they don't have any significant effects on the model.
+
+```{r}
+## deleting near-zero variance data
+near_zero <- nearZeroVar(train)
+train <- train[,-near_zero] 
+dim(train)
+
+## deleting NA
+na <- sapply(train, function(x) mean(is.na(x)))> 0.90
+train <- train[, na==FALSE]
+dim(train)
+
+## deleting first fifth columns related to describing each person
+train <- train[, -(1: 5)]
+dim(train)
+```
+
+## Data partioning
+
+```{r}
+in_train <-createDataPartition(train$classe, p=.75, list=FALSE)
+training <- train[in_train,]
+testing <-train[-in_train,]
+dim(training)
+dim(testing)
+```
+
+## Random forest
+
+```{r}
+set.seed(123456)
+model_rf <- train(classe ~ ., data = training, method = "rf")
+pred_rf <- predict(model_rf, testing)
+confusionMatrix(pred_rf, factor(testing$classe))
+```
+
+## Liner discriminant analysis
+
+```{r}
+set.seed(123456)
+model_lda <- train(classe ~ ., data = training, method = "lda")
+pred_lda <- predict(model_lda, testing)
+confusionMatrix(factor(testing$classe),pred_lda)
+```
+
+## Recursive partitioning and regression trees
+
+```{r}
+set.seed(123456)
+model_rpart <- train(classe ~ ., data = training, method = "rpart")
+pred_rpart<- predict(model_rpart, testing)
+confusionMatrix(factor(testing$classe), pred_rpart)
+fancyRpartPlot(model_rpart$finalModel)
+```
+
+## Selecting the best model and applying on test data
+Comparing the accuracy of the different tested models showed that high accuracy is related to Random Forest.
+
+```{r}
+predict_test <- as.data.frame(predict(model_rf, newdata = test))
+predict_test
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
